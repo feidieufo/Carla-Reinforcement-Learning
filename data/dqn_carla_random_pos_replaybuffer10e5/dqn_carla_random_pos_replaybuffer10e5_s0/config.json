@@ -1,0 +1,42 @@
+{
+    "batch_size":	32,
+    "env_name":	"Carla",
+    "epsilon_decay_period":	25000,
+    "epsilon_eval":	0.01,
+    "epsilon_train":	0.1,
+    "evaluation_step":	3000,
+    "exp_name":	"dqn_carla_random_pos_replaybuffer10e5",
+    "gamma":	0.99,
+    "gpu":	0,
+    "iteration":	200,
+    "logger_kwargs":	{
+        "exp_name":	"dqn_carla_random_pos_replaybuffer10e5",
+        "output_dir":	"/home/zhr/workspace/Carla-Reinforcement-Learning/data/dqn_carla_random_pos_replaybuffer10e5/dqn_carla_random_pos_replaybuffer10e5_s0"
+    },
+    "max_ep_len":	6000,
+    "port":	2000,
+    "replay_size":	100000,
+    "self":	{
+        "<__main__.Dqn object at 0x7f7c98361b70>":	{
+            "logger":	{
+                "<utils.logx.EpochLogger object at 0x7f7c983385f8>":	{
+                    "epoch_dict":	{},
+                    "exp_name":	"dqn_carla_random_pos_replaybuffer10e5",
+                    "first_row":	true,
+                    "log_current_row":	{},
+                    "log_headers":	[],
+                    "output_dir":	"/home/zhr/workspace/Carla-Reinforcement-Learning/data/dqn_carla_random_pos_replaybuffer10e5/dqn_carla_random_pos_replaybuffer10e5_s0",
+                    "output_file":	{
+                        "<_io.TextIOWrapper name='/home/zhr/workspace/Carla-Reinforcement-Learning/data/dqn_carla_random_pos_replaybuffer10e5/dqn_carla_random_pos_replaybuffer10e5_s0/progress.txt' mode='w+' encoding='UTF-8'>":	{
+                            "mode":	"w+"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "target_update_period":	800,
+    "train_step":	25000,
+    "update_period":	4,
+    "warmup_steps":	2000
+}
