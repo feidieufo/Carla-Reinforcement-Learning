@@ -63,10 +63,10 @@ def linearly_decaying_epsilon(decay_period, step, warmup_steps, epsilon):
 
 
 class Dqn:
-    def __init__(self, env_name, port=2000, gpu=0, train_step=25000, evaluation_step=3000, max_ep_len=6000, epsilon_train=0.1,
-                epsilon_eval=0.01, batch_size=32, replay_size=100000,
-                epsilon_decay_period=25000, warmup_steps=2000, iteration=200, gamma=0.99,
-                target_update_period=800, update_period=4, logger_kwargs=dict()):
+    def __init__(self, env_name, port=2000, gpu=0, batch_size=32, train_step=25000, evaluation_step=3000,
+                 max_ep_len=6000, epsilon_train=0.1, epsilon_eval=0.01, replay_size=100000,
+                 epsilon_decay_period=25000, warmup_steps=2000, iteration=200, gamma=0.99,
+                 target_update_period=800, update_period=4, logger_kwargs=dict()):
 
         self.logger = EpochLogger(**logger_kwargs)
         self.logger.save_config(locals())
@@ -246,6 +246,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', '-s', type=int, default=0)
     parser.add_argument('--port', type=int, default=2000)
     parser.add_argument('--gpu', type=int, default=0)
+    parser.add_argument('--batch', type=int, default=32)
     parser.add_argument('--exp_name', type=str, default='dqn_carla_random_pos_replaybuffer10e5')
     args = parser.parse_args()
 

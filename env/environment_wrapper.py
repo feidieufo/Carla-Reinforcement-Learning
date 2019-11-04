@@ -119,16 +119,12 @@ class EnvironmentWrapper(object):
 		"""
 		self.info['action'] = action_idx
 
-		print("take_action")
 		self._take_action(action_idx)
 
-		print("update obs")
 		self._update_state()
 
 		if self.automatic_render:
 			self.render()
-
-		print("done:", self.done)
 		#self.state = self._preprocess_state(self.state)
 		return self.observation, self.reward, self.done, self.info
 

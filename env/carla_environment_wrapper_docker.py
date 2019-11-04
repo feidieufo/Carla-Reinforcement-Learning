@@ -47,8 +47,11 @@ key_map = {
 
 class CarlaEnvironmentWrapper(EnvironmentWrapper):
     def __init__(self, num_speedup_steps=30, require_explicit_reset=True, is_render_enabled=False,
-                 early_termination_enabled=False, run_offscreen=False, cameras=['SceneFinal'], save_screens=False, port=2000, gpu=0):
+                 early_termination_enabled=False, run_offscreen=False, cameras=['SceneFinal'], save_screens=False,
+                 port=2000, gpu=0, discrete_control=True):
         EnvironmentWrapper.__init__(self, is_render_enabled, save_screens)
+
+        print("port:", port)
 
         self.episode_max_time = 1000000
         self.allow_braking = True
@@ -125,10 +128,10 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
         self.is_game_setup = False  # Will be true only when setup_client_and_server() is called, either explicitly, or by reset()
 
         # action space
-        self.discrete_controls = True
+        self.discrete_controls = discrete_control
         self.action_space_size = 2
-        self.action_space_high = [1, 1]
-        self.action_space_low = [-1, -1]
+        self.action_space_high = np.array([1, 1])
+        self.action_space_low = np.array([-1, -1])
         self.action_space_abs_range = np.maximum(np.abs(self.action_space_low), np.abs(self.action_space_high))
         self.steering_strength = 0.35
         self.gas_strength = 1.0
@@ -145,7 +148,13 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
         self.actions_description = ['NO-OP', 'TURN_LEFT', 'TURN_RIGHT', 'GAS', 'BRAKE',
                                     'GAS_AND_TURN_LEFT', 'GAS_AND_TURN_RIGHT',
                                     'BRAKE_AND_TURN_LEFT', 'BRAKE_AND_TURN_RIGHT']
-        self.action_space = Discrete(len(self.actions))
+        if discrete_control:
+            self.action_space = Discrete(len(self.actions))
+        else:
+            self.action_space = Box(low=self.action_space_low, high=self.action_space_high)
+        self.observation_space = Box(low=-np.inf, high=np.inf, shape=[80, 80, 6])
+
+
         for idx, action in enumerate(self.actions_description):
             for key in key_map.keys():
                 if action == key:
@@ -245,21 +254,21 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
             #        "-carla-no-hud"]
 
             #docker <19.03
-            p = subprocess.Popen(['docker', 'run', '--rm', '-d', '-p',
-                                   str(self.port) + '-' + str(self.port + 2) + ':' + str(self.port) + '-' + str(self.port + 2),
-                                   '--runtime=nvidia', '-e', 'NVIDIA_VISIBLE_DEVICES='+str(self.gpu), "carlasim/carla:0.8.4",
-                                   '/bin/bash', 'CarlaUE4.sh', self.map, '-windowed',
-                                   '-benchmark', '-fps=10', '-world-port=' + str(self.port)], shell=False,
-                                  stdout=subprocess.PIPE)
+            # p = subprocess.Popen(['docker', 'run', '--rm', '-d', '-p',
+            #                        str(self.port) + '-' + str(self.port + 2) + ':' + str(self.port) + '-' + str(self.port + 2),
+            #                        '--runtime=nvidia', '-e', 'NVIDIA_VISIBLE_DEVICES='+str(self.gpu), "carlasim/carla:0.8.4",
+            #                        '/bin/bash', 'CarlaUE4.sh', self.map, '-windowed',
+            #                        '-benchmark', '-fps=10', '-world-port=' + str(self.port)], shell=False,
+            #                       stdout=subprocess.PIPE)
 
             #docker=19.03
-            # p = subprocess.Popen(['docker', 'run', '--rm', '-d', '-p',
-            #                       str(self.port) + '-' + str(self.port + 2) + ':' + str(self.port) + '-' + str(
-            #                           self.port + 2),
-            #                       '--gpus='+str(self.gpu), "carlasim/carla:0.8.4",
-            #                       '/bin/bash', 'CarlaUE4.sh', self.map, '-windowed',
-            #                       '-benchmark', '-fps=10', '-world-port=' + str(self.port)], shell=False,
-            #                      stdout=subprocess.PIPE)
+            p = subprocess.Popen(['docker', 'run', '--rm', '-d', '-p',
+                                  str(self.port) + '-' + str(self.port + 2) + ':' + str(self.port) + '-' + str(
+                                      self.port + 2),
+                                  '--gpus='+str(self.gpu), "lin-ai-27:5000/carla:0.8.4",
+                                  '/bin/bash', 'CarlaUE4.sh', self.map, '-windowed',
+                                  '-benchmark', '-fps=10', '-world-port=' + str(self.port)], shell=False,
+                                 stdout=subprocess.PIPE)
 
             docker_out, err = p.communicate()
 
@@ -294,6 +303,21 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
                 os.kill(self.server_pid, signal.SIGKILL)
             time.sleep(10)
             no_of_attempts += 1
+
+    def _get_directions(self, current_point, end_point):
+        """
+        Class that should return the directions to reach a certain goal
+        """
+
+        directions = self.planner.get_next_command(
+            (current_point.location.x,
+             current_point.location.y, 0.22),
+            (current_point.orientation.x,
+             current_point.orientation.y,
+             current_point.orientation.z),
+            (end_point.location.x, end_point.location.y, 0.22),
+            (end_point.orientation.x, end_point.orientation.y, end_point.orientation.z))
+        return directions
 
     def check_early_stop(self, player_measurements, immediate_reward):
 
