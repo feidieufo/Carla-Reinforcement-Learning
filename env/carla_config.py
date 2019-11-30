@@ -1,7 +1,7 @@
 # Resolutions
 
-server_height = 360
-server_width = 360
+server_height = 600
+server_width = 800
 render_height = 360
 render_width = 360
 
