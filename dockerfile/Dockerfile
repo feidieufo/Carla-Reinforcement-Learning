@@ -7,11 +7,11 @@ RUN apt-get update && \
     apt-get -y install software-properties-common && \
     add-apt-repository -y ppa:jonathonf/python-3.6 && \
     apt-get update && \
-    apt-get install python3.6 && \
+    apt-get -y install python3.6 && \
     cd cd /usr/bin/ && \
     rm python3 && \
     ln -s python3.6 python3 && \
-    apt-get install python3-pip
+    apt-get -y install python3-pip
 RUN pip3 install torch==1.1.0 torchvision==0.3.0 -f https://download.pytorch.org/whl/cu90/torch_stable.html
 RUN pip3 install imgaug
 ENV LC_ALL C
