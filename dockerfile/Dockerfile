@@ -8,7 +8,7 @@ RUN apt-get update && \
     add-apt-repository -y ppa:jonathonf/python-3.6 && \
     apt-get update && \
     apt-get -y install python3.6 && \
-    cd cd /usr/bin/ && \
+    cd /usr/bin/ && \
     rm python3 && \
     ln -s python3.6 python3 && \
     apt-get -y install python3-pip
