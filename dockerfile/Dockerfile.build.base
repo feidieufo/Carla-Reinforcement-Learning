@@ -35,7 +35,9 @@ FROM nvidia/cuda@sha256:40db1c98b66e133f54197ba1a66312b9c29842635c8cba5ae66fb56d
 ENV HADOOP_VERSION=2.7.2
 LABEL HADOOP_VERSION=2.7.2
 
-RUN DEBIAN_FRONTEND=noninteractive && \
+RUN cp /etc/apt/sources.list /etc/apt/sources.list.bak && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse" > /etc/apt/sources.list && \
+    DEBIAN_FRONTEND=noninteractive && \
     apt-get -y update && \
     apt-get -y install python \
         python-pip \
