@@ -5,7 +5,7 @@ RUN ln -s /usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so \
 
 RUN apt-get update && \
     apt-get -y install software-properties-common && \
-    add-apt-repository -y ppa:jonathonf/python-3.6 && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get -y install python3.6 && \
     cd /usr/bin/ && \
