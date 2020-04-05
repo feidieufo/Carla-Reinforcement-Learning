@@ -3,7 +3,8 @@ FROM registry.cn-hangzhou.aliyuncs.com/feidieufo/zhr_rl:base
 RUN ln -s /usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so \
           /usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so.1
 
-RUN apt-get -y install software-properties-common && \
+RUN apt-get update && \
+    apt-get -y install software-properties-common && \
     add-apt-repository -y ppa:jonathonf/python-3.6 && \
     apt-get update && \
     apt-get install python3.6 && \
