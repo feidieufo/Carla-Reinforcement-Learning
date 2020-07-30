@@ -43,7 +43,7 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
     def __init__(self, num_speedup_steps=30, require_explicit_reset=True, is_render_enabled=False,
                  early_termination_enabled=False, run_offscreen=False, save_screens=False,
                  port=2000, gpu=0, discrete_control=True, kill_when_connection_lost=True, city_name="Town01",
-                 channel_last=True):
+                 channel_last=True, action_num=2):
         EnvironmentWrapper.__init__(self, is_render_enabled, save_screens)
 
         print("port:", port)
@@ -75,9 +75,9 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
 
         # action space
         self.discrete_controls = discrete_control
-        self.action_space_size = 3
-        self.action_space_high = np.array([1, 1, 1])
-        self.action_space_low = np.array([-1, -1, -1])
+        self.action_space_size = action_num
+        self.action_space_high = np.array([1]*action_num)
+        self.action_space_low = np.array([-1]*action_num)
         self.action_space_abs_range = np.maximum(np.abs(self.action_space_low), np.abs(self.action_space_high))
         self.steering_strength = 0.35
         self.gas_strength = 1.0
@@ -110,9 +110,9 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
     def setup_client_and_server(self, reconnect_client_only=False):
         # open the server
         if not reconnect_client_only:
-            self.server, self.out = self._open_server()
+            self.server = self._open_server()
             self.server_pid = self.server.pid  # To kill incase child process gets lost
-            print("setup server, out:", self.server_pid, "dockerid", self.out)
+            print("setup server, out:", self.server_pid)
 
         while True:
             try:
@@ -125,8 +125,6 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
                 self.is_game_setup = self.server and self.game
 
                 print("setup client")
-                # self.out = shell("docker ps -q")
-                # print("dockerid", self.out)
 
                 return
             except TCPConnectionError as error:
@@ -152,58 +150,36 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
         if self.run_offscreen:
             my_env = {**os.environ, 'SDL_VIDEODRIVER': 'offscreen', 'SDL_HINT_CUDA_DEVICE': '0', }
         with open(self.log_path, "wb") as out:
-            #docker <19.03
-            # p = subprocess.Popen(['docker', 'run', '--rm', '-d', '-p',
-            #                        str(self.port) + '-' + str(self.port + 2) + ':' + str(self.port) + '-' + str(self.port + 2),
-            #                        '--runtime=nvidia', '-e', 'NVIDIA_VISIBLE_DEVICES='+str(self.gpu), "carlasim/carla:0.8.4",
-            #                        '/bin/bash', 'CarlaUE4.sh', self.map, '-windowed',
-            #                        '-benchmark', '-fps=10', '-world-port=' + str(self.port)], shell=False,
-            #                       stdout=subprocess.PIPE)
 
-            #docker=19.03
-            p = subprocess.Popen(['docker', 'run', '--rm', '-d', '-p',
-                                  str(self.port) + '-' + str(self.port + 2) + ':' + str(self.port) + '-' + str(
-                                      self.port + 2),
-                                  '--gpus='+str(self.gpu), "carlasim/carla:0.8.4",
-                                  '/bin/bash', 'CarlaUE4.sh', self.map, '-windowed',
-                                  '-benchmark', '-fps=10', '-world-port=' + str(self.port)], shell=False,
-                                 stdout=subprocess.PIPE)
+            cmd = [path.join(environ.get('CARLA_ROOT'), 'CarlaUE4.sh'), self.map,
+                   "-benchmark", "-carla-server", "-fps=10", "-world-port={}".format(self.port),
+                   "-windowed -ResX={} -ResY={}".format(carla_config.server_width, carla_config.server_height),
+                   "-carla-no-hud"]
+            p = subprocess.Popen(cmd, stdout=out, stderr=out, env=my_env, preexec_fn=os.setsid)
 
-            # docker_id = shell("docker ps -q")
-            docker_out, err = p.communicate()
-
-            # cmd = [path.join(environ.get('CARLA_ROOT'), 'CarlaUE4.sh'), self.map,
-            #        "-benchmark", "-carla-server", "-fps=10", "-world-port={}".format(self.port),
-            #        "-windowed -ResX={} -ResY={}".format(carla_config.server_width, carla_config.server_height),
-            #        "-carla-no-hud"]
-            # p = subprocess.Popen(cmd, stdout=out, stderr=out, env=my_env, preexec_fn=os.setsid)
-        # p = subprocess.Popen(cmd, env=my_env, preexec_fn=os.setsid)
-        return p, docker_out
+        return p
 
     def _close_server(self):
         if self.kill_when_connection_lost:
             print("kill before")
-            # os.kill(os.getpgid(self.server.pid), signal.SIGKILL)
+            os.kill(os.getpgid(self.server.pid), signal.SIGKILL)
             # self.server.kill()
-            print(self.out)
-            subprocess.call(['docker', 'stop', self.out[:-1]])
 
-            while True:
-                cmd = shell("docker ps -q")
-                if cmd == "":
-                    break
+            no_of_attempts = 0
+            while is_process_alive(self.server_pid):
+                print("Trying to close Carla server with pid %d" % self.server_pid)
+                if no_of_attempts < 5:
+                    self.server.terminate()
+                elif no_of_attempts < 10:
+                    self.server.kill()
+                elif no_of_attempts < 15:
+                    os.kill(self.server_pid, signal.SIGTERM)
+                else:
+                    os.kill(self.server_pid, signal.SIGKILL)
+                time.sleep(10)
+                no_of_attempts += 1
 
             print("kill after")
-            return
-        # no_of_attempts = 0
-        # while is_process_alive(self.server_pid):
-        #     try:
-        #         self.server.terminate()
-        #         self.server.wait()
-        #         os.killpg(self.server.pid, signal.SIGTERM)
-        #         time.sleep(10)
-        #     except Exception as error:
-        #         print(error)
 
 
 
@@ -373,7 +349,7 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
                 controls_sent = True
                 # print(self.control)
                 # #
-                # rand = random.randint(0, 4)
+                # rand = random.randint(0, 7)
                 # if rand == 0 and self.first_debug:
                 #     self.first_debug = False
                 #     raise Exception
@@ -405,17 +381,14 @@ class CarlaEnvironmentWrapper(EnvironmentWrapper):
         if not self.is_game_setup:
             self.setup_client_and_server()
 
-        experiment_type = random.randint(0, 0)
+        experiment_type = random.randint(0, 2)
         self.cur_experiment = self.experiments[experiment_type]
         self.pose = random.choice(self.cur_experiment.poses)
-        # self.cur_experiment = self.experiments[0]
-        # self.pose = self.cur_experiment.poses[0]
         scene = self.game.load_settings(self.cur_experiment.conditions)
         self.positions = scene.player_start_spots
         self.start_point = self.positions[self.pose[0]]
         self.end_point = self.positions[self.pose[1]]
 
-        # print("start episode")
         while True:
             try:
                 self.game.start_episode(self.pose[0])

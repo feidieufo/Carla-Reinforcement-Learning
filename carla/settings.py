@@ -45,6 +45,7 @@ class CarlaSettings(object):
         self.WeatherId = 1
         self.SeedVehicles = None
         self.SeedPedestrians = None
+        self.DisableTwoWheeledVehicles = False
         self.set(**kwargs)
         self._sensors = []
 

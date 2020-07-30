@@ -74,7 +74,7 @@ class Logger:
     state of a training run, and the trained model.
     """
 
-    def __init__(self, output_dir=None, output_fname='progress.txt', exp_name=None):
+    def __init__(self, output_dir=None, output_fname='progress.txt', exp_name=None, mode='w'):
         """
         Initialize a Logger.
 
@@ -99,7 +99,7 @@ class Logger:
                 print("Warning: Log dir %s already exists! Storing info there anyway."%self.output_dir)
             else:
                 os.makedirs(self.output_dir)
-            self.output_file = open(osp.join(self.output_dir, output_fname), 'w')
+            self.output_file = open(osp.join(self.output_dir, output_fname), mode)
             atexit.register(self.output_file.close)
             print(colorize("Logging data to %s"%self.output_file.name, 'green', bold=True))
         else:
